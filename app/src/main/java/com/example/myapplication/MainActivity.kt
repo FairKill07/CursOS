@@ -3,6 +3,7 @@ package com.example.myapplication
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
@@ -10,12 +11,14 @@ import android.widget.ListView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import java.io.File
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
@@ -31,6 +34,9 @@ class MainActivity : AppCompatActivity() {
     private val MAX_HISTORY_SIZE = 10
     private val smileResultsHistory = mutableListOf<String>()
     private lateinit var historyAdapter: ArrayAdapter<String>
+
+    private var Path:String = "";
+    private  var Result:String = "";
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +59,16 @@ class MainActivity : AppCompatActivity() {
         // Обробник натискання на кнопку детекції посмішки
         detectButton.setOnClickListener {
             detectSmile()
+
         }
+    }
+
+    private  fun allDb()
+    {
+        val myDbManager = MyDbManager(this)
+        myDbManager.openDb()
+        myDbManager.insertToDb(this.Result, this.Path)
+        myDbManager.readDb()
     }
 
     private fun initializeUI() {
@@ -84,10 +99,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        val myDbManager = MyDbManager(this)
-        myDbManager.openDb()
-        myDbManager.insertToDb("Test", data.toString())
-        myDbManager.readDb()
+        var uri : Uri? = null;
+        uri = data?.data;
+        Path = uri.toString();
+
         when (requestCode) {
             imagePickerRequestCode, cameraRequestCode -> {
                 handleImageSelection(requestCode, resultCode, data)
@@ -142,6 +157,8 @@ class MainActivity : AppCompatActivity() {
         if (faces.isNotEmpty()) {
             val smileProbability = faces[0].getSmilingProbability()
             val resultText = "Посмішку виявлено: $smileProbability"
+            this.Result = smileProbability.toString()
+            allDb();
             updateSmileResult(resultText)
             addToSmileResultsHistory(resultText)
         } else {

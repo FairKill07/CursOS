@@ -15,10 +15,10 @@ class MyDbManager (val context: Context) {
     fun openDb(){
         db = myDbHelper.writableDatabase
     }
-    fun insertToDb(title:String, path:String)
+    fun insertToDb(result:String, path:String)
     {
         var values = ContentValues().apply {
-            put(MyDbNameClass.COLUMN_NAME_TITLE, title)
+            put(MyDbNameClass.COLUMN_NAME_TITLE, result)
             put(MyDbNameClass.COLUMN_NAME_PATH, path)
         }
         db?.insert(MyDbNameClass.TABLE_NAME, null, values)
