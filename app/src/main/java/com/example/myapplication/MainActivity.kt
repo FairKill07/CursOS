@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import SmileDetectionDatabaseHelper
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
@@ -17,6 +18,10 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.io.IOException
+import java.io.File
+import java.io.FileOutputStream
+import android.os.Environment
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,10 +36,14 @@ class MainActivity : AppCompatActivity() {
     private val MAX_HISTORY_SIZE = 10
     private val smileResultsHistory = mutableListOf<String>()
     private lateinit var historyAdapter: ArrayAdapter<String>
+    private lateinit var databaseHelper: SmileDetectionDatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Initialize the SQLite database helper
+        databaseHelper = SmileDetectionDatabaseHelper(this)
 
         // Ініціалізація елементів інтерфейсу
         initializeUI()
@@ -54,6 +63,13 @@ class MainActivity : AppCompatActivity() {
         detectButton.setOnClickListener {
             detectSmile()
         }
+
+        detectButton.setOnClickListener {
+            detectSmile()
+        }
+
+        // Load history from the database and display it
+        loadHistory()
     }
 
     private fun initializeUI() {
@@ -61,6 +77,34 @@ class MainActivity : AppCompatActivity() {
         smileResultTextView = findViewById(R.id.smileResultTextView)
         detectButton = findViewById(R.id.detectButton)
     }
+
+    private fun loadHistory() {
+        val cursor = databaseHelper.getAllHistory()
+        val historyList = mutableListOf<Pair<String, String>>()
+
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                val result = cursor.getString(cursor.getColumnIndexOrThrow(SmileDetectionDatabaseHelper.COLUMN_RESULT))
+                val photoPath = cursor.getString(cursor.getColumnIndexOrThrow(SmileDetectionDatabaseHelper.COLUMN_PHOTO_PATH))
+                historyList.add(Pair(result, photoPath))
+            } while (cursor.moveToNext())
+
+            cursor.close()
+        }
+
+        // Update the ListView with the loaded history
+        historyAdapter.clear()
+        historyAdapter.addAll(historyList.map { "${it.first} - ${it.second}" })
+    }
+
+
+    private fun addToSmileResultsHistory(result: String, photoPath: String) {
+        if (::selectedImage.isInitialized) {
+            databaseHelper.addHistory(result, photoPath)
+            loadHistory()
+        }
+    }
+
 
     private fun initializeFaceDetector() {
         val options = FaceDetectorOptions.Builder()
@@ -113,8 +157,26 @@ class MainActivity : AppCompatActivity() {
         data?.data?.let { uri ->
             val inputStream = contentResolver.openInputStream(uri)
             selectedImage = android.graphics.BitmapFactory.decodeStream(inputStream)
+
+            // Save the selected image to a file
+            val photoPath = saveImageToFile(selectedImage)
             imageView.setImageBitmap(selectedImage)
+
+            // Use the photoPath in your database and display logic
+            addToSmileResultsHistory("Image selected", photoPath)
         }
+    }
+
+    private fun saveImageToFile(bitmap: Bitmap): String {
+        val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "${System.currentTimeMillis()}.jpg")
+        try {
+            FileOutputStream(file).use { fos ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return file.absolutePath
     }
 
     private fun handleImageSelectionFromCamera(data: Intent?) {
@@ -141,11 +203,15 @@ class MainActivity : AppCompatActivity() {
             val resultText = "Посмішку виявлено: $smileProbability"
             updateSmileResult(resultText)
             addToSmileResultsHistory(resultText)
+            // Add result to the SQLite database
+            val photoPath = saveImageToFile(selectedImage)
+            addToSmileResultsHistory(resultText, photoPath)
         } else {
             val resultText = "На жаль, обличчя не виявлено."
             updateSmileResult(resultText)
             addToSmileResultsHistory(resultText)
         }
+
     }
 
     private fun handleSmileDetectionFailure(e: Exception) {
