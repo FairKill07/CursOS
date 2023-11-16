@@ -84,7 +84,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
+        val myDbManager = MyDbManager(this)
+        myDbManager.openDb()
+        myDbManager.insertToDb("Test", data.toString())
+        myDbManager.readDb()
         when (requestCode) {
             imagePickerRequestCode, cameraRequestCode -> {
                 handleImageSelection(requestCode, resultCode, data)
