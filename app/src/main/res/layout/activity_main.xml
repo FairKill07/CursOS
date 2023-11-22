@@ -7,8 +7,8 @@
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="match_parent"
-        android:layout_height="313dp"
+        android:layout_width="372dp"
+        android:layout_height="263dp"
         android:adjustViewBounds="true" />
 
     <TextView
@@ -43,6 +43,14 @@
 
 
     </LinearLayout>
+
+    <Button
+        android:id="@+id/deleteDb"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Очистить историю"
+        android:textSize="18sp" />
 
     <TextView
         android:layout_width="match_parent"

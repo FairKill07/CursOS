@@ -24,28 +24,30 @@ class MyDbManager (val context: Context) {
         db?.insert(MyDbNameClass.TABLE_NAME, null, values)
     }
 
-    @SuppressLint("Range")
-    fun readDb(): ArrayList<String>{
-        val db : SQLiteDatabase? = myDbHelper.writableDatabase
-        val dataList = ArrayList<String>();
-
-        val cursor = db?.query(MyDbNameClass.TABLE_NAME, null,null,null,null,null,null, null)
-
-        while (cursor?.moveToNext() !!)
-        {
-                val dataText = cursor?.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_TITLE))
-                val dataPath = cursor?.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_PATH))
-                Log.d("title", dataText.toString());
-                Log.d("path", dataPath.toString())
-                dataList.add(dataText.toString());
-        }
-
-
-        cursor?.close()
-        db.delete(MyDbNameClass.TABLE_NAME, null,null)
-        db.close();
-        return dataList
-    }
+//    @SuppressLint("Range")
+//    fun readDb(): ArrayList<String>{
+//        val db : SQLiteDatabase? = myDbHelper.writableDatabase
+//        val dataList = ArrayList<String>();
+//
+//        val cursor = db?.query(MyDbNameClass.TABLE_NAME, null,null,null,null,null,null, null)
+//
+//        while (cursor?.moveToNext() !!)
+//        {
+//                val dataText = cursor?.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_TITLE))
+//                val dataPath = cursor?.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_PATH))
+//                Log.d("title", dataText.toString());
+//                Log.d("path", dataPath.toString())
+//                dataList.add(dataText.toString());
+//
+//
+//        }
+//
+//
+//        cursor?.close()
+////        db.delete(MyDbNameClass.TABLE_NAME, null,null)
+//        db.close();
+//        return dataList
+//    }
 
 
 }

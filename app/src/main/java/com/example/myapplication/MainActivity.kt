@@ -1,10 +1,14 @@
 package com.example.myapplication
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.ListView
@@ -29,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var imageView: ImageView
     private lateinit var smileResultTextView: TextView
     private lateinit var detectButton: Button
+    private lateinit var deleteDb: Button
     private lateinit var faceDetector: FaceDetector
 
     private val MAX_HISTORY_SIZE = 10
@@ -50,6 +55,7 @@ class MainActivity : AppCompatActivity() {
 
         // Налаштування історії результатів
         setupHistory()
+        readDb();
 
         // Обробник натискання на кнопку вибору зображення
         findViewById<Button>(R.id.pickImageButton).setOnClickListener {
@@ -61,20 +67,65 @@ class MainActivity : AppCompatActivity() {
             detectSmile()
 
         }
+        deleteDb.setOnClickListener{
+            val myDbHelper = MyDbHelper(this);
+            val db : SQLiteDatabase? = myDbHelper.writableDatabase
+            db?.delete(MyDbNameClass.TABLE_NAME, null,null)
+            recreate()
+
+        }
+
     }
 
+
+    @SuppressLint("Range")
+    private fun readDb(){
+        historyAdapter.clear()
+        val myDbHelper = MyDbHelper(this);
+        val db : SQLiteDatabase? = myDbHelper.writableDatabase
+        val dataList = ArrayList<String>();
+
+        val cursor = db?.query(MyDbNameClass.TABLE_NAME, null,null,null,null,null,null, null)
+
+        while (cursor?.moveToNext() !!)
+        {
+            val dataText = cursor?.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_TITLE))
+            val dataPath = cursor?.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_PATH))
+            Log.d("title", dataText.toString());
+            Log.d("path", dataPath.toString())
+            dataList.add(dataText.toString());
+
+            addToSmileResultsHistory(dataText.toString());
+
+        }
+
+
+        cursor?.close()
+//        db.delete(MyDbNameClass.TABLE_NAME, null,null)
+        db.close();
+    }
     private  fun allDb()
     {
         val myDbManager = MyDbManager(this)
         myDbManager.openDb()
         myDbManager.insertToDb(this.Result, this.Path)
-        myDbManager.readDb()
+        readDb()
     }
+
+//    private fun deleteHistory(view:View)
+//    {
+//        val myDbHelper = MyDbHelper(this);
+//        val db : SQLiteDatabase? = myDbHelper.writableDatabase
+//        db?.delete(MyDbNameClass.TABLE_NAME, null,null)
+//    }
+
 
     private fun initializeUI() {
         imageView = findViewById(R.id.imageView)
         smileResultTextView = findViewById(R.id.smileResultTextView)
         detectButton = findViewById(R.id.detectButton)
+        deleteDb = findViewById(R.id.deleteDb)
+
     }
 
     private fun initializeFaceDetector() {
@@ -157,22 +208,27 @@ class MainActivity : AppCompatActivity() {
         if (faces.isNotEmpty()) {
             val smileProbability = faces[0].getSmilingProbability()
             val resultText = "Посмішку виявлено: $smileProbability"
-            this.Result = smileProbability.toString()
+            this.Result = resultText.toString()
             allDb();
             updateSmileResult(resultText)
-            addToSmileResultsHistory(resultText)
+//            addToSmileResultsHistory(resultText)
         } else {
             val resultText = "На жаль, обличчя не виявлено."
+            this.Result = resultText.toString()
+            allDb();
             updateSmileResult(resultText)
-            addToSmileResultsHistory(resultText)
+//            addToSmileResultsHistory(resultText)
         }
     }
 
     private fun handleSmileDetectionFailure(e: Exception) {
         if (e is MlKitException) {
             val resultText = "Помилка: ${e.message}"
+            this.Result = resultText.toString()
+            allDb();
             updateSmileResult(resultText)
-            addToSmileResultsHistory(resultText)
+
+//            addToSmileResultsHistory(resultText)
         }
     }
 
@@ -180,10 +236,12 @@ class MainActivity : AppCompatActivity() {
         smileResultTextView.text = resultText
     }
 
-    private fun addToSmileResultsHistory(result: String) {
+    fun  addToSmileResultsHistory(result: String) {
         if (smileResultsHistory.size >= MAX_HISTORY_SIZE) {
             smileResultsHistory.removeAt(0)
+
         }
+
         smileResultsHistory.add(result)
         historyAdapter.notifyDataSetChanged()
     }
