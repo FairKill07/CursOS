@@ -8,23 +8,21 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.ListView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.net.toUri
 import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import java.io.File
 import java.io.IOException
 
+@Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
 
     private val imagePickerRequestCode = 123
@@ -40,8 +38,8 @@ class MainActivity : AppCompatActivity() {
     private val smileResultsHistory = mutableListOf<String>()
     private lateinit var historyAdapter: ArrayAdapter<String>
 
-    private var Path:String = "";
-    private  var Result:String = "";
+    private var Path:String = ""
+    private  var Result:String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +53,7 @@ class MainActivity : AppCompatActivity() {
 
         // Налаштування історії результатів
         setupHistory()
-        readDb();
+        readDb()
 
         // Обробник натискання на кнопку вибору зображення
         findViewById<Button>(R.id.pickImageButton).setOnClickListener {
@@ -67,42 +65,38 @@ class MainActivity : AppCompatActivity() {
             detectSmile()
 
         }
+        // Обробник натискання на видалення БД
         deleteDb.setOnClickListener{
-            val myDbHelper = MyDbHelper(this);
+            val myDbHelper = MyDbHelper(this)
             val db : SQLiteDatabase? = myDbHelper.writableDatabase
             db?.delete(MyDbNameClass.TABLE_NAME, null,null)
             recreate()
 
         }
-
     }
-
 
     @SuppressLint("Range")
     private fun readDb(){
         historyAdapter.clear()
-        val myDbHelper = MyDbHelper(this);
+        val myDbHelper = MyDbHelper(this)
         val db : SQLiteDatabase? = myDbHelper.writableDatabase
-        val dataList = ArrayList<String>();
+        val dataList = ArrayList<String>()
 
         val cursor = db?.query(MyDbNameClass.TABLE_NAME, null,null,null,null,null,null, null)
 
         while (cursor?.moveToNext() !!)
         {
-            val dataText = cursor?.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_TITLE))
-            val dataPath = cursor?.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_PATH))
-            Log.d("title", dataText.toString());
+            val dataText = cursor.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_TITLE))
+            val dataPath = cursor.getString(cursor.getColumnIndex(MyDbNameClass.COLUMN_NAME_PATH))
+            Log.d("title", dataText.toString())
             Log.d("path", dataPath.toString())
-            dataList.add(dataText.toString());
+            dataList.add(dataText.toString())
 
-            addToSmileResultsHistory(dataText.toString());
+            addToSmileResultsHistory(dataText.toString())
 
         }
-
-
-        cursor?.close()
-//        db.delete(MyDbNameClass.TABLE_NAME, null,null)
-        db.close();
+        cursor.close()
+        db.close()
     }
     private  fun allDb()
     {
@@ -111,14 +105,6 @@ class MainActivity : AppCompatActivity() {
         myDbManager.insertToDb(this.Result, this.Path)
         readDb()
     }
-
-//    private fun deleteHistory(view:View)
-//    {
-//        val myDbHelper = MyDbHelper(this);
-//        val db : SQLiteDatabase? = myDbHelper.writableDatabase
-//        db?.delete(MyDbNameClass.TABLE_NAME, null,null)
-//    }
-
 
     private fun initializeUI() {
         imageView = findViewById(R.id.imageView)
@@ -147,12 +133,11 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(pickImageIntent, imagePickerRequestCode)
     }
 
-
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        var uri : Uri? = null;
-        uri = data?.data;
-        Path = uri.toString();
+        val uri : Uri? = data?.data
+        Path = uri.toString()
 
         when (requestCode) {
             imagePickerRequestCode, cameraRequestCode -> {
@@ -160,7 +145,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun handleImageSelection(requestCode: Int, resultCode: Int, data: Intent?) {
         if (resultCode == Activity.RESULT_OK) {
             try {
@@ -177,7 +161,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun handleImageSelectionFromGallery(data: Intent?) {
         data?.data?.let { uri ->
             val inputStream = contentResolver.openInputStream(uri)
@@ -185,12 +168,10 @@ class MainActivity : AppCompatActivity() {
             imageView.setImageBitmap(selectedImage)
         }
     }
-
     private fun handleImageSelectionFromCamera(data: Intent?) {
         selectedImage = data?.extras?.get("data") as Bitmap
         imageView.setImageBitmap(selectedImage)
     }
-
     private fun detectSmile() {
         if (::selectedImage.isInitialized) {
             val inputImage = InputImage.fromBitmap(selectedImage, 0)
@@ -206,29 +187,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleSmileDetectionSuccess(faces: List<Face>) {
         if (faces.isNotEmpty()) {
-            val smileProbability = faces[0].getSmilingProbability()
+            val smileProbability = faces[0].smilingProbability
             val resultText = "Посмішку виявлено: $smileProbability"
-            this.Result = resultText.toString()
-            allDb();
+            this.Result = resultText
+            allDb()
             updateSmileResult(resultText)
-//            addToSmileResultsHistory(resultText)
         } else {
             val resultText = "На жаль, обличчя не виявлено."
-            this.Result = resultText.toString()
-            allDb();
+            this.Result = resultText
+            allDb()
             updateSmileResult(resultText)
-//            addToSmileResultsHistory(resultText)
         }
     }
 
     private fun handleSmileDetectionFailure(e: Exception) {
         if (e is MlKitException) {
             val resultText = "Помилка: ${e.message}"
-            this.Result = resultText.toString()
-            allDb();
+            this.Result = resultText
+            allDb()
             updateSmileResult(resultText)
-
-//            addToSmileResultsHistory(resultText)
         }
     }
 
@@ -236,7 +213,7 @@ class MainActivity : AppCompatActivity() {
         smileResultTextView.text = resultText
     }
 
-    fun  addToSmileResultsHistory(result: String) {
+    private fun  addToSmileResultsHistory(result: String) {
         if (smileResultsHistory.size >= MAX_HISTORY_SIZE) {
             smileResultsHistory.removeAt(0)
 
